@@ -33,7 +33,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: olegariotech-site/cintia-almeida-gomes-advocacia
-          ref: 694928d8ad20e2a7959169f10cdac413eba908a2
+          ref: e7fe5ebf435481350fb2968feb971166adc54deb
           path: v5-source
           persist-credentials: false
 
@@ -44,6 +44,10 @@ jobs:
         run: |
           set -eu
           test -f _site/index.html
+          test -f _site/privacidade.html
+          grep -q 'noindex,nofollow,noarchive' _site/privacidade.html
+          grep -q 'href="privacidade.html"' _site/index.html
+          if grep -q 'href="mailto:' _site/privacidade.html; then exit 1; fi
           test -f _site/v5.css
           test -f _site/assets/media/cintia-hero-540.webp
           test -f _site/cintia-logo-hero-site.mp4

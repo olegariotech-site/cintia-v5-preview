@@ -10,9 +10,9 @@ import shutil
 
 SOURCE = Path("v5-source")
 DEST = Path("_site")
-EXPECTED_BASE = "694928d8ad20e2a7959169f10cdac413eba908a2"
+EXPECTED_BASE = "e7fe5ebf435481350fb2968feb971166adc54deb"
 FILES = (
-    "index.html", "styles.css", "v4.css", "v5.css", "site.js",
+    "index.html", "privacidade.html", "styles.css", "v4.css", "v5.css", "site.js",
     "whatsapp.svg", "assetslogo-cintia-oficial.png",
     "assetsdra-cintia-hero.png", "assetsdra-cintia-hero-lossless.webp",
     "assetsdra-cintia-sobre.jpeg", "cintia-logo-hero-site.mp4",
@@ -67,6 +67,35 @@ html = html.replace(
 assert 'index,follow' not in html and 'action="https://wa.me' not in html
 html_path.write_text(html, encoding="utf-8")
 
+# Use the genuine, reviewed privacy text from the V5.1 PR but make the
+# review page nonindexable and safe when hosted under github.io/project/.
+privacy_path = DEST / "privacidade.html"
+privacy = privacy_path.read_text(encoding="utf-8")
+privacy, privacy_meta_count = re.subn(
+    r'<meta name="robots" content="[^"]*">',
+    '<meta name="robots" content="noindex,nofollow,noarchive">',
+    privacy, count=1,
+)
+assert privacy_meta_count == 1, "Privacy notice must have a robots meta"
+privacy, canonical_count = re.subn(r'<link rel="canonical" href="[^"]*">\s*', '', privacy, count=1)
+assert canonical_count == 1, "Remove production canonical from the test preview"
+assert privacy.count('href="/"') == 3, "Unexpected privacy home links"
+privacy = privacy.replace('href="/"', 'href="./"')
+privacy, real_email_count = re.subn(
+    r'<a href="mailto:[^"]+">([^<]+)</a>',
+    r'<span>\1</span>',
+    privacy,
+)
+assert real_email_count == 2, "Do not link directly to live office email in the preview"
+assert 'https://wa.me/' not in privacy
+assert 'GTM-TGGPH6PH' not in privacy
+privacy = privacy.replace(
+    '</footer>',
+    '<p style="text-align:center;padding:12px;font:12px Arial,sans-serif">'
+    'PRÉVIA PARA REVISÃO — NÃO É A POLÍTICA PUBLICADA NO SITE OFICIAL.</p>\n</footer>',
+)
+privacy_path.write_text(privacy, encoding="utf-8")
+
 js_path = DEST / "site.js"
 js = js_path.read_text(encoding="utf-8")
 def replace_once(old, new):
@@ -96,7 +125,7 @@ js_path.write_text(js, encoding="utf-8")
 )
 (DEST / "preview-build.txt").write_text(
     "Source repository: olegariotech-site/cintia-almeida-gomes-advocacia\n"
-    "Exact approved V5 HEAD: " + EXPECTED_BASE + "\n"
+    "Exact reviewed PR #18 V5.1 HEAD: " + EXPECTED_BASE + "\n"
     "Release: public TEST PREVIEW ONLY. Live contact and GTM disabled.\n",
     encoding="utf-8",
 )
@@ -108,4 +137,4 @@ assert not (DEST / "tests").exists()
 assert not (DEST / "tools").exists()
 assert (DEST / "assets" / "fonts").is_dir()
 assert (DEST / "assets" / "media").is_dir()
-print("PREVIEW READY: pinned V5, production CNAME excluded, robots noindex, messaging and GTM disabled.")
+print("PREVIEW READY: pinned PR18 V5.1, production CNAME excluded, robots noindex, messaging and GTM disabled.")
