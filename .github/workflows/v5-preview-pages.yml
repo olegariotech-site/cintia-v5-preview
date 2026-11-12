@@ -1,0 +1,68 @@
+name: Cíntia V5 — prévia isolada no GitHub Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "scripts/build-preview.py"
+      - ".github/workflows/v5-preview-pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: cintia-v5-preview-pages
+  cancel-in-progress: true
+
+jobs:
+  deploy-preview:
+    runs-on: ubuntu-24.04
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout preview configuration
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Checkout exact reviewed V5 commit (not main)
+        uses: actions/checkout@v4
+        with:
+          repository: olegariotech-site/cintia-almeida-gomes-advocacia
+          ref: 694928d8ad20e2a7959169f10cdac413eba908a2
+          path: v5-source
+          persist-credentials: false
+
+      - name: Build isolated and safe preview
+        run: python3 scripts/build-preview.py
+
+      - name: Verify publication boundaries
+        run: |
+          set -eu
+          test -f _site/index.html
+          test -f _site/v5.css
+          test -f _site/assets/media/cintia-hero-540.webp
+          test -f _site/cintia-logo-hero-site.mp4
+          test ! -e _site/CNAME
+          test ! -e _site/.github
+          test ! -e _site/docs
+          grep -q 'noindex,nofollow,noarchive' _site/index.html
+          grep -q 'PRÉVIA SEM ENVIO' _site/site.js
+          grep -q 'return; // The test preview must never load' _site/site.js
+          if grep -E 'href="https://wa.me|action="https://wa.me' _site/index.html; then exit 1; fi
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload preview files
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: _site
+
+      - name: Deploy preview without changing client's site
+        id: deployment
+        uses: actions/deploy-pages@v4
