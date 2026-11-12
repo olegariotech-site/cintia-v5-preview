@@ -79,7 +79,7 @@ privacy, privacy_meta_count = re.subn(
 assert privacy_meta_count == 1, "Privacy notice must have a robots meta"
 privacy, canonical_count = re.subn(r'<link rel="canonical" href="[^"]*">\s*', '', privacy, count=1)
 assert canonical_count == 1, "Remove production canonical from the test preview"
-assert privacy.count('href="/"') == 3, "Unexpected privacy home links"
+assert privacy.count('href="/"') == 4, "Unexpected privacy home links"
 privacy = privacy.replace('href="/"', 'href="./"')
 privacy, real_email_count = re.subn(
     r'<a href="mailto:[^"]+">([^<]+)</a>',
